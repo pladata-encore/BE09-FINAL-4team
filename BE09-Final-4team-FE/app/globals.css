@@ -1,0 +1,394 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* 공통 디자인 시스템 클래스들 */
+@layer components {
+  /* 글래스모피즘 효과 */
+  .glass {
+    @apply bg-white/60 backdrop-blur-sm;
+  }
+
+  .glass-strong {
+    @apply bg-white/80 backdrop-blur-xl;
+  }
+
+  /* 그라데이션 배경 */
+  .gradient-bg {
+    @apply bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50;
+  }
+
+  /* 기본 그라데이션 */
+  .gradient-primary {
+    @apply bg-gradient-to-r from-blue-500 to-indigo-600;
+  }
+
+  .gradient-primary-hover {
+    @apply bg-gradient-to-r from-blue-600 to-indigo-700;
+  }
+
+  /* 상태별 그라데이션 */
+  .gradient-success {
+    @apply bg-gradient-to-r from-emerald-400 to-emerald-500;
+  }
+
+  .gradient-warning {
+    @apply bg-gradient-to-r from-amber-400 to-amber-500;
+  }
+
+  .gradient-error {
+    @apply bg-gradient-to-r from-red-400 to-red-500;
+  }
+
+  .gradient-info {
+    @apply bg-gradient-to-r from-blue-400 to-blue-500;
+  }
+
+  /* 스케줄 타입별 스타일 */
+  .schedule-meeting {
+    @apply bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200;
+  }
+
+  .schedule-project {
+    @apply bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200;
+  }
+
+  .schedule-education {
+    @apply bg-gradient-to-r from-amber-50 to-amber-100 text-amber-700 border-amber-200;
+  }
+
+  .schedule-customer {
+    @apply bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-purple-200;
+  }
+
+  .schedule-report {
+    @apply bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 border-teal-200;
+  }
+
+  .schedule-vacation {
+    @apply bg-gradient-to-r from-rose-50 to-rose-100 text-rose-700 border-rose-200;
+  }
+
+  .schedule-return {
+    @apply bg-gradient-to-r from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-200;
+  }
+
+  /* 직원별 아바타 색상 */
+  .avatar-ceo {
+    @apply bg-gradient-to-r from-purple-500 to-pink-500;
+  }
+
+  .avatar-developer {
+    @apply bg-gradient-to-r from-blue-500 to-cyan-500;
+  }
+
+  .avatar-senior {
+    @apply bg-gradient-to-r from-green-500 to-teal-500;
+  }
+
+  .avatar-designer {
+    @apply bg-gradient-to-r from-orange-500 to-red-500;
+  }
+
+  /* 애니메이션 */
+  .transition-smooth {
+    @apply transition-all duration-200;
+  }
+
+  .hover-lift {
+    @apply hover:-translate-y-1 hover:shadow-xl;
+  }
+
+  .hover-scale {
+    @apply hover:scale-105;
+  }
+
+  /* 그림자 */
+  .shadow-primary {
+    @apply shadow-lg shadow-blue-500/25;
+  }
+
+  /* 테두리 반경 */
+  .rounded-glass {
+    @apply rounded-xl;
+  }
+
+  .rounded-glass-lg {
+    @apply rounded-2xl;
+  }
+
+  /* 간격 */
+  .space-section {
+    @apply mb-8;
+  }
+
+  .space-card {
+    @apply mb-6;
+  }
+
+  .space-item {
+    @apply mb-4;
+  }
+
+  .space-small {
+    @apply mb-2;
+  }
+
+  /* FullCalendar 커스텀 스타일 */
+  .calendar-container {
+    @apply w-full;
+  }
+
+  .fc {
+    @apply font-sans;
+  }
+
+  .fc .fc-toolbar {
+    @apply mb-4;
+  }
+
+  .fc .fc-button {
+    @apply bg-blue-500 hover:bg-blue-600 border-blue-500 hover:border-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+
+  .fc .fc-button:focus {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  }
+
+  .fc .fc-button-primary:not(:disabled).fc-button-active,
+  .fc .fc-button-primary:not(:disabled):active {
+    @apply bg-blue-600 border-blue-600;
+  }
+
+  .fc .fc-daygrid-day.fc-day-today {
+    @apply bg-blue-50/50;
+  }
+
+  .fc .fc-timegrid-slot.fc-slot-today {
+    @apply bg-blue-50/30;
+  }
+
+  .fc .fc-event {
+    @apply border-0 shadow-sm cursor-pointer transition-all duration-200;
+  }
+
+  .fc .fc-event:hover {
+    @apply shadow-md transform scale-105;
+  }
+
+  .fc .fc-event-main {
+    @apply font-semibold;
+  }
+
+  .fc .fc-timegrid-slot-label {
+    @apply text-sm font-medium text-gray-600;
+  }
+
+  .fc .fc-col-header-cell {
+    @apply bg-gray-50/50 border-gray-200;
+  }
+
+  .fc .fc-col-header-cell-cushion {
+    @apply text-gray-800 font-semibold;
+  }
+
+  .fc .fc-timegrid-axis {
+    @apply bg-gray-50/50 border-gray-200;
+  }
+
+  .fc .fc-timegrid-slot {
+    @apply border-gray-100;
+  }
+
+  .fc .fc-timegrid-now-indicator-line {
+    @apply border-red-500;
+  }
+
+  .fc .fc-timegrid-now-indicator-arrow {
+    @apply border-red-500;
+  }
+
+  .fc .fc-daygrid-day-frame {
+    @apply border-gray-200;
+  }
+
+  .fc .fc-daygrid-day-events {
+    @apply min-h-[2rem];
+  }
+
+  .fc .fc-daygrid-day-number {
+    @apply text-gray-800 font-medium;
+  }
+
+  .fc .fc-daygrid-day.fc-day-past {
+    @apply bg-gray-50/30;
+  }
+
+  .fc .fc-daygrid-day.fc-day-future {
+    @apply bg-white;
+  }
+
+  .fc .fc-daygrid-day.fc-day-other {
+    @apply bg-gray-100/50;
+  }
+
+  .fc .fc-daygrid-day.fc-day-today {
+    @apply bg-blue-50/50;
+  }
+
+  .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    @apply text-blue-600 font-bold;
+  }
+
+  .fc .fc-timegrid-slot.fc-slot-past {
+    @apply bg-gray-50/30;
+  }
+
+  .fc .fc-timegrid-slot.fc-slot-future {
+    @apply bg-white;
+  }
+
+  .fc .fc-timegrid-slot.fc-slot-today {
+    @apply bg-blue-50/30;
+  }
+
+  .fc .fc-event-dragging {
+    @apply opacity-75 shadow-lg;
+  }
+
+  .fc .fc-event-resizing {
+    @apply opacity-90;
+  }
+
+  .fc .fc-highlight {
+    @apply bg-blue-100/50 border-blue-300;
+  }
+
+  .fc .fc-daygrid-day.fc-day-disabled {
+    @apply bg-gray-100/50;
+  }
+
+  .fc .fc-daygrid-day.fc-day-disabled .fc-daygrid-day-number {
+    @apply text-gray-400;
+  }
+}

@@ -1,0 +1,36 @@
+[
+  { "id": "1", "name": "CEO", "members": [] },
+  {
+    "id": "2", "name": "경영진", "members": [],
+    "children": [
+      { "id": "2-1", "name": "경영팀", "members": [] },
+      { "id": "2-2", "name": "인사팀", "members": [] }
+    ]
+  },
+  {
+    "id": "3", "name": "개발본부", "members": [],
+    "children": [
+      { "id": "3-1", "name": "프론트엔드팀", "members": [] },
+      { "id": "3-2", "name": "백엔드팀", "members": [] },
+      { "id": "3-3", "name": "모바일팀", "members": [] }
+    ]
+  },
+  {
+    "id": "4", "name": "디자인본부", "members": [],
+    "children": [
+      { "id": "4-1", "name": "UI팀", "members": [] },
+      { "id": "4-2", "name": "UX팀", "members": [] },
+      { "id": "4-3", "name": "그래픽팀", "members": [] }
+    ]
+  },
+  {
+    "id": "5", "name": "마케팅본부", "members": [],
+    "children": [
+      { "id": "5-1", "name": "브랜드팀", "members": [] },
+      { "id": "5-2", "name": "콘텐츠팀", "members": [] },
+      { "id": "5-3", "name": "홍보팀", "members": [] }
+    ]
+  }
+]
+
+

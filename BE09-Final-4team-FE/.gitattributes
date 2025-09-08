@@ -1,0 +1,5 @@
+# 줄바꿈 관련 설정
+* text=auto
+
+# .husky 스크립트는 LF 고정
+.husky/* text eol=lf

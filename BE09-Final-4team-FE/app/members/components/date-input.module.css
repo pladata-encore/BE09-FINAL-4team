@@ -1,0 +1,18 @@
+.dateInput::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  display: none;
+}
+
+/* Edge/IE */
+.dateInput::-ms-clear { display: none; }
+.dateInput::-ms-reveal { display: none; }
+
+/* Firefox */
+.dateInput::-moz-focus-inner { border: 0; }
+
+/* Extra right padding for custom icon space */
+.dateInput {
+  padding-right: 2.25rem; /* ~36px for icon area */
+}
+
+
