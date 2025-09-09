@@ -241,7 +241,8 @@ BE09-Final-4team-FE/
 
 ### 클라우드 아키텍처
 
-![image.png](attachment:fbc0a6df-704d-47fe-82b6-8d7516390b54:image.png)
+<img width="2362" height="1402" alt="image" src="https://github.com/user-attachments/assets/e6f3e62e-48f9-4c4f-9033-f91bdb86fbea" />
+
 
 ---
 
