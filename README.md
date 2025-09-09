@@ -142,12 +142,14 @@
 - **Config Server**: 설정 중앙화
 - **Gateway Server**: API 게이트웨이, 인증 처리
 - **User Service**: 사용자 관리 (PostgreSQL)
+- **Org Service**: 조직 관리 시스템 (PostgreSQL)
 - **News Crawler Service**: 뉴스 수집기 (MySQL)
 - **Attendance Service**: 직원 출퇴근 기록과 근무 스케줄, 연차(부여·잔액·사용)를 관리하며 AI 챗봇 연계를 통해 휴가 신청 등 자동화된 업무 흐름을 지원 (PostgreSQL)
 - **Approval Service**: 템플릿 기반 결재 문서의 작성·수정·제출과 다단계 승인/반려 흐름 및 활동 이력을 관리하는 결재 프로세스
 - **Attachment Service**: 문서·게시글 등에서 업로드되는 파일의 저장, 메타데이터 관리, 검증 및 제공(다운로드/URL 발급)을 담당하는 첨부파일 관리
 - **Communication Service**: 이메일·알림 등 사용자 커뮤니케이션 채널로 메시지를 발송하고 템플릿/전송 이력을 관리
 - **Tenant Service**: 멀티테넌트 환경에서 테넌트(회사)별 구성을 분리·관리하고 테넌트 메타데이터, 초기화 및 격리를 담당
+
 
 ### 스토리보드 (Figma)
 
@@ -241,7 +243,7 @@ BE09-Final-4team-FE/
 
 ### 클라우드 아키텍처
 
-<img width="2362" height="1402" alt="image" src="https://github.com/user-attachments/assets/e6f3e62e-48f9-4c4f-9033-f91bdb86fbea" />
+
 
 
 ---
@@ -249,6 +251,8 @@ BE09-Final-4team-FE/
 ## 6. 🔍 회고
 
 > 회고 항목은 개발 완료 후 작성 예정입니다.
+[박경빈](https://www.notion.so/2698b767810d807c9bc2c8f7a6dbdf62?pvs=21)
+
 [조석근](https://www.notion.so/269af86dbbee80b0bedcd5f051363517?pvs=21)
 - 프로젝트 수행 중 어려웠던 점
 - 기술적/팀워크 측면에서의 인사이트
