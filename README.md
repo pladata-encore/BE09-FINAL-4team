@@ -31,7 +31,7 @@ Hermes는 조직 내 모든 구성원의 **업무 흐름, 인사 관리, 일정,
 | 박경빈 | 박준범 | 이석진 | 이혜빈 | 조석근 |
 |--------|--------|--------|--------|--------|
 | 팀장 / 백엔드 | 프론트엔드 | AI 챗봇 / 백엔드 | 뉴스 크롤러 / 데이터 | 기획 / 문서 / QA |
-| [honggildong](https://github.com/honggildong) | [kimyounghee](https://github.com/kimyounghee) | [leecheolsu](https://github.com/leecheolsu) | [parkminsu](https://github.com/parkminsu) | [choejiwoo](https://github.com/choejiwoo) |
+| [GITHUB](https://github.com/honggildong) | [GITHUB](https://github.com/junbem) | [GITHUB](https://github.com/leecheolsu) | [GITHUB](https://github.com/parkminsu) | [GITHUB](https://github.com/choejiwoo) |
 
 ---
 
