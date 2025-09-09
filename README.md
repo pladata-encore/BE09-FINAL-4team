@@ -242,7 +242,7 @@ BE09-Final-4team-FE/
 ```
 
 ### 클라우드 아키텍처
-
+<img width="1633" height="930" alt="image" src="https://github.com/user-attachments/assets/4c411077-9504-406e-8fbc-c1545cba32bc" />
 
 
 
