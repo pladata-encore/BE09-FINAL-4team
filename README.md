@@ -28,10 +28,9 @@ Hermes는 조직 내 모든 구성원의 **업무 흐름, 인사 관리, 일정,
 
 ### 👨‍👩‍👧‍👦 팀원 구성
 
-| 박경빈 | 박준범 | 이석진 | 이혜빈 | 조석근 |
+| [이석진 (팀장)](https://github.com/Othereum) | 박경빈 | 박준범 | 이혜빈 | 조석근 |
 |--------|--------|--------|--------|--------|
-| 팀장 / 백엔드 | 프론트엔드 | AI 챗봇 / 백엔드 | 뉴스 크롤러 / 데이터 | 기획 / 문서 / QA |
-| [GITHUB](https://github.com/honggildong) | [GITHUB](https://github.com/junbem) | [GITHUB](https://github.com/leecheolsu) | [GITHUB](https://github.com/parkminsu) | [GITHUB](https://github.com/choejiwoo) |
+| 결재 시스템 / 멀티테넌시 / 인증 및 보안 |  |  |  |  |
 
 ---
 
