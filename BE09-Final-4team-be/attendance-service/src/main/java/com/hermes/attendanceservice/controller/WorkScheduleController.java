@@ -46,14 +46,11 @@ public class WorkScheduleController {
         @ApiResponse(responseCode = "404", description = "근무 정책을 찾을 수 없음")
     })
     @GetMapping("/users/{userId}/work-policy")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<UserWorkPolicyDto>> getUserWorkPolicy(
             @Parameter(description = "사용자 ID") @PathVariable Long userId,
             @Parameter(description = "인증된 사용자 정보") @AuthenticationPrincipal UserPrincipal user) {
         try {
-            // 본인 또는 관리자만 조회 가능
-            if (!user.getId().equals(userId) && !user.getRole().name().equals("ADMIN")) {
-                return ResponseEntity.ok(ApiResult.failure("권한이 없습니다."));
-            }
             
             // Authorization 헤더는 null로 전달 (User Service에서 직접 처리)
             UserWorkPolicyDto result = workScheduleService.getUserWorkPolicy(userId);
@@ -123,7 +120,7 @@ public class WorkScheduleController {
      * 근무시간, 휴게시간, 출근시간, 퇴근시간, 코어시간, 시차 근무 출근 가능 시간 등을 스케줄로 생성
      */
     @PostMapping("/users/{userId}/apply-work-policy")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<List<ScheduleResponseDto>>> applyWorkPolicyToSchedule(
             @PathVariable Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -179,7 +176,7 @@ public class WorkScheduleController {
      * 사용자별 스케줄 조회 (WorkPolicy 정보 포함)
      */
     @GetMapping("/users/{userId}/schedules")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<List<ScheduleResponseDto>>> getUserSchedules(
             @PathVariable Long userId) {
         try {
@@ -192,10 +189,10 @@ public class WorkScheduleController {
     }
     
     /**
-     * 사용자별 특정 기간 스케줄 조회
+     * 사용자별 특정 기간 스케줄 조회 (본인 + 동료 조회 가능)
      */
     @GetMapping("/users/{userId}/schedules/range")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<List<ScheduleResponseDto>>> getUserSchedulesByDateRange(
             @PathVariable Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -213,7 +210,7 @@ public class WorkScheduleController {
      * 스케줄 상세 조회
      */
     @GetMapping("/users/{userId}/schedules/{scheduleId}")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ScheduleResponseDto>> getScheduleById(
             @PathVariable Long userId,
             @PathVariable Long scheduleId) {

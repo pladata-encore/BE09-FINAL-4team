@@ -16,8 +16,10 @@ import { Input } from "@/components/ui/input";
 import { communicationApi } from "@/lib/services/communication";
 import { formatDateTime } from "@/lib/utils/date-format";
 import { useAuth } from "@/contexts/auth-context";
-import { attachmentService } from "@/lib/services/attachment/api";
+import { attachmentApi } from "@/lib/services/attachment/api";
 import { toast } from "sonner";
+import { userApi } from "@/lib/services/user/api";
+import { Button } from "@/components/ui/button";
 
 // Lexical Editor Viewer (읽기 전용)
 const Editor = dynamic(() => import("../write/components/Editor"), { ssr: false });
@@ -29,7 +31,7 @@ export default function AnnouncementsDetailModal({
   onEdit,
   onDelete
 }) {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,6 +39,60 @@ export default function AnnouncementsDetailModal({
   const [comments, setComments] = useState([]);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [attachments, setAttachments] = useState([]);
+  const [authenticatedImageUrls, setAuthenticatedImageUrls] = useState({});
+  const [currentUserImageUrl, setCurrentUserImageUrl] = useState(null);
+
+  const getAuthenticatedImageUrl = async (fileId) => {
+    if (!fileId) return null;
+    return await attachmentApi.viewFile(fileId)
+    return null;
+  };
+
+  useEffect(() => {
+    if (user?.email) {
+      userApi.getAllUsers()
+        .then(users => {
+          if (Array.isArray(users)) {
+            const employee = users.find((emp) => emp.email === user.email);
+            if (employee) {
+              if (employee.profileImageUrl && !employee.profileImageUrl.startsWith('http')) {
+                getAuthenticatedImageUrl(employee.profileImageUrl).then(url => {
+                  setCurrentUserImageUrl(url);
+                });
+              } else {
+                setCurrentUserImageUrl(employee.profileImageUrl);
+              }
+            }
+          }
+        })
+        .catch(error => {
+          console.error('현재 사용자 프로필 이미지 로드 오류:', error);
+        });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const loadCommentImages = async () => {
+      const newUrls = {};
+      
+      for (const comment of comments) {
+        if (comment.userInfo?.profileImageUrl && !comment.userInfo.profileImageUrl.startsWith('http')) {
+          const url = await getAuthenticatedImageUrl(comment.userInfo.profileImageUrl);
+          if (url) {
+            newUrls[comment.id] = url;
+          }
+        } else if (comment.userInfo?.profileImageUrl) {
+          newUrls[comment.id] = comment.userInfo.profileImageUrl;
+        }
+      }
+      
+      setAuthenticatedImageUrls(newUrls);
+    };
+
+    if (comments.length > 0) {
+      loadCommentImages();
+    }
+  }, [comments]);
 
   useEffect(() => {
     const loadAnnouncementData = async () => {
@@ -230,40 +286,40 @@ export default function AnnouncementsDetailModal({
             댓글 ({comments.length})
           </h3>
 
-          {/* 댓글 작성 */}
           <div className="mb-6">
             <div className="flex gap-3">
-              <div className="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0"></div>
-              <div className="flex-1">
-                <Input
-                  placeholder="댓글을 입력하세요..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="mb-2"
-                />
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim()}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                  >
-                    <Send className="w-4 h-4" />
-                    댓글 작성
-                  </button>
-                </div>
-              </div>
+              <UserAvatar 
+                src={currentUserImageUrl}
+                alt={user?.name || '사용자'}
+                fallback={user?.name?.charAt(0) || 'U'}
+                size="md"
+                className="flex-shrink-0"
+              />
+              <Input
+                placeholder="댓글을 입력하세요..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAddComment();
+                  }
+                }}
+                className="flex-1"
+              />
+              <Button onClick={handleAddComment} disabled={!newComment.trim()}>
+                <Send className="w-4 h-4" />
+              </Button>
             </div>
           </div>
 
-          {/* 댓글 목록 */}
           <div className="space-y-4">
             {comments.map((comment) => (
               <div key={comment.id} className="flex gap-3 relative">
                 <UserAvatar 
-                  src={comment.userInfo?.profileImageUrl}
+                  src={authenticatedImageUrls[comment.id] || comment.userInfo?.profileImageUrl}
                   alt={comment.userInfo?.name || '사용자'}
-                  fallback={comment.userInfo?.name?.charAt(0)}
+                  fallback={comment.userInfo?.name?.charAt(0) || 'U'}
                   size="md"
                   className="flex-shrink-0"
                 />

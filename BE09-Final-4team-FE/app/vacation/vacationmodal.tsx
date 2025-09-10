@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, getDay } from "date-fns";
 import { ko } from "date-fns/locale";
 import { X, Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -179,13 +179,39 @@ export default function VacationModal({
     }
   };
 
+  // 주말(토요일, 일요일)을 제외한 휴가 일수 계산
+  const calculateWorkingDays = (dates: Date[]): number => {
+    return dates.filter((date) => {
+      const dayOfWeek = getDay(date);
+      return dayOfWeek !== 0 && dayOfWeek !== 6; // 일요일(0), 토요일(6) 제외
+    }).length;
+  };
+
   const handleSubmit = (): void => {
+    if (!vacationType) {
+      alert("휴가 종류를 선택해주세요.");
+      return;
+    }
+
     if (selectedDates.length === 0) {
       alert("날짜를 선택해주세요.");
       return;
     }
+
+    if (vacationType === "반차" && (!startTime || !endTime)) {
+      alert("반차의 경우 시간을 설정해주세요.");
+      return;
+    }
+
     if (!reason.trim()) {
-      alert("연차 사유를 입력해주세요.");
+      alert("휴가 사유를 입력해주세요.");
+      return;
+    }
+
+    const workingDays = calculateWorkingDays(selectedDates);
+
+    if (workingDays === 0) {
+      alert("선택한 날짜에 근무일이 없습니다. 평일을 선택해주세요.");
       return;
     }
 
@@ -195,7 +221,7 @@ export default function VacationModal({
       startTime,
       endTime,
       reason: reason.trim(),
-      days: selectedDates.length,
+      days: workingDays, // 주말을 제외한 실제 근무일 수
     };
 
     if (onSubmit) {
@@ -283,7 +309,11 @@ export default function VacationModal({
                     {format(endDate, "yyyy.MM.dd")}
                   </div>
                   <div className="text-sm font-medium text-blue-700">
-                    {selectedDates.length}일
+                    <div className="text-right">
+                      <div className="text-blue-600 font-semibold">
+                        휴가 {calculateWorkingDays(selectedDates)}일
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -298,7 +328,15 @@ export default function VacationModal({
                     <span className="font-medium">선택된 날짜:</span>{" "}
                     {format(startDate, "yyyy.MM.dd")}
                   </div>
-                  <div className="text-sm font-medium text-green-700">1일</div>
+                  <div className="text-sm font-medium text-green-700">
+                    {calculateWorkingDays([startDate]) === 0 ? (
+                      <span className="text-orange-600">
+                        주말 (휴가일수: 0일)
+                      </span>
+                    ) : (
+                      "1일"
+                    )}
+                  </div>
                 </div>
               </div>
             )}

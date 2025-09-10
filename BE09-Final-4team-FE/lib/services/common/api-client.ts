@@ -3,7 +3,7 @@ import { ApiResult } from './types'
 import { LoginResponse } from '../user'
 
 // API 기본 설정
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
 
 // 메모리에 Access Token 저장
 let accessToken: string | null = null

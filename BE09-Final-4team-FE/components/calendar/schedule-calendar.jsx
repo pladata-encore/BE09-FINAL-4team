@@ -196,7 +196,6 @@ export default function ScheduleCalendar({
           hour12: false,
         }}
         eventDisplay="block"
-        eventClassNames="cursor-pointer"
         /* 겹침 제어: '휴게' 또는 type==='break' 만 겹치기 허용 */
         eventOverlap={(stillEvent, movingEvent) => {
           const aTitle = stillEvent.title;
@@ -211,7 +210,11 @@ export default function ScheduleCalendar({
             aType === "break" ||
             bType === "break" ||
             aType === "RESTTIME" ||
-            bType === "RESTTIME"
+            bType === "RESTTIME" ||
+            aType === "CORETIME" ||
+            bType === "CORETIME" ||
+            aTitle === "코어타임" ||
+            bTitle === "코어타임"
           );
         }}
         slotEventOverlap={true}
@@ -276,49 +279,80 @@ export default function ScheduleCalendar({
             });
           }
         }}
-        /* 위치 계산이 끝난 직후 최종 보정: 부모 래퍼의 left/width/transform 제거 및 고정 */
+        /* 위치 계산이 끝난 직후 최종 보정 */
         eventPositioned={(info) => {
           const isBreak =
             info.event.title === "휴게" ||
             info.event.title === "휴게시간" ||
             info.event.extendedProps?.type === "break" ||
             info.event.extendedProps?.type === "RESTTIME";
-          if (!isBreak) return;
+          if (!isBreak) {
+            // 겹치는 이벤트 묶음을 좌우 한정에서 가운데 정렬
+            requestAnimationFrame(() => {
+              const harness = info.el.closest(".fc-timegrid-event-harness");
+              if (!harness) return;
+              const col =
+                harness.closest(".fc-timegrid-col-frame") ||
+                harness.closest(".fc-timegrid-col");
+              if (!col) return;
 
-          const harness = info.el.closest(".fc-timegrid-event-harness");
-          if (harness) {
-            harness.style.removeProperty("left");
-            harness.style.removeProperty("right");
-            harness.style.removeProperty("width");
-            harness.style.removeProperty("transform");
-            harness.style.removeProperty("margin-left");
+              // 초기 transform 제거 후 측정
+              const resetTransform = (el) => {
+                el.style.transform = "";
+              };
+              resetTransform(harness);
 
-            harness.style.setProperty("left", "0", "important");
-            harness.style.setProperty("right", "0", "important");
-            harness.style.setProperty("width", "100%", "important");
-            harness.style.setProperty("transform", "none", "important");
-            harness.style.setProperty("z-index", "60", "important");
+              const colRect = col.getBoundingClientRect();
+              const allHarness = Array.from(
+                col.querySelectorAll(".fc-timegrid-event-harness")
+              );
+              const myRect = harness.getBoundingClientRect();
 
-            const inset = harness.querySelector(
-              ".fc-timegrid-event-harness-inset"
-            );
-            if (inset) {
-              inset.style.removeProperty("left");
-              inset.style.removeProperty("right");
-              inset.style.removeProperty("width");
-              inset.style.removeProperty("transform");
-              inset.style.removeProperty("margin-left");
+              // 같은 세로 구간과 겹치는 하네스들만 그룹핑
+              const group = allHarness.filter((h) => {
+                const r = h.getBoundingClientRect();
+                const vertOverlap = !(
+                  r.bottom <= myRect.top || r.top >= myRect.bottom
+                );
+                return vertOverlap;
+              });
+              if (group.length <= 1) return;
 
-              inset.style.setProperty("left", "0", "important");
-              inset.style.setProperty("right", "0", "important");
-              inset.style.setProperty("width", "100%", "important");
-              inset.style.setProperty("transform", "none", "important");
+              // 그룹의 좌우 범위 계산
+              let minLeft = Infinity;
+              let maxRight = -Infinity;
+              group.forEach((h) => {
+                const r = h.getBoundingClientRect();
+                const left = r.left - colRect.left;
+                const right = r.right - colRect.left;
+                if (left < minLeft) minLeft = left;
+                if (right > maxRight) maxRight = right;
+              });
+              const groupWidth = maxRight - minLeft;
+              const containerWidth = colRect.width;
+              if (groupWidth >= containerWidth) return;
+
+              const offset = (containerWidth - groupWidth) / 2 - minLeft; // px 기준 가운데 보정
+
+              // 그룹 전체에 동일 오프셋 적용
+              group.forEach((h) => {
+                // 기존 transform 제거 후 적용해 누적 방지
+                h.style.transform = `translateX(${offset}px)`;
+              });
+            });
+          } else {
+            // 휴게는 풀폭 유지
+            const harness = info.el.closest(".fc-timegrid-event-harness");
+            if (harness) {
+              harness.style.setProperty("left", "0", "important");
+              harness.style.setProperty("right", "0", "important");
+              harness.style.setProperty("width", "100%", "important");
+              harness.style.setProperty("transform", "none", "important");
             }
+            info.el.style.setProperty("left", "0", "important");
+            info.el.style.setProperty("right", "0", "important");
+            info.el.style.setProperty("width", "100%", "important");
           }
-
-          info.el.style.setProperty("left", "0", "important");
-          info.el.style.setProperty("right", "0", "important");
-          info.el.style.setProperty("width", "100%", "important");
         }}
       />
     </div>

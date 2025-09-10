@@ -18,6 +18,7 @@ import {
   WorkCycle,
   WorkPolicyType,
   AnnualLeaveRequestDto,
+  WorkPolicyRequestDto,
 } from "@/lib/services/attendance";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -71,7 +72,13 @@ export default function CreateWorkPolicyPage(): JSX.Element {
       case "shift":
         return <ShiftWorkForm {...commonProps} />;
       case "time":
-        return <TimeWorkForm {...commonProps} />;
+        return (
+          <TimeWorkForm
+            {...commonProps}
+            formData={formData as any}
+            setFormData={setFormData as any}
+          />
+        );
       case "select":
         return <SelectWorkForm {...commonProps} />;
       default:
@@ -146,57 +153,117 @@ export default function CreateWorkPolicyPage(): JSX.Element {
         sunday: false,
       };
       const workDays: DayOfWeek[] = Object.keys(workingDaysMap)
-        .filter((k) => workingDaysMap[k])
-        .map((k) => toEnumDay(k)!)
-        .filter(Boolean) as DayOfWeek[];
+        .filter((key) => workingDaysMap[key])
+        .map(toEnumDay)
+        .filter((day): day is DayOfWeek => day !== null);
 
-      const weeklyWorkingDays = workDays.filter(
-        (d) => d !== DayOfWeek.SATURDAY && d !== DayOfWeek.SUNDAY
-      ).length;
-
-      const startTimeStr: string = policyData.workTime || "09:00";
-      const startTime = toTimeString(startTimeStr);
-      const workHours = Number(policyData.workHours ?? 8);
-      const workMinutes = Number(policyData.workMinutes ?? 0);
-
-      const breakTimes = (policyData.breakTimes as Array<{
-        start: string;
-        end: string;
-      }>) || [{ start: "12:00", end: "13:00" }];
-      const breakStartTime = toTimeString(breakTimes[0]?.start);
-      const breakEndTime = toTimeString(breakTimes[0]?.end);
-
+      // totalRequiredMinutes 계산
+      const workHours = policyData.workHours || 8;
+      const workMinutes = policyData.workMinutes || 0;
       const totalRequiredMinutes = workHours * 60 + workMinutes;
 
-      const request = {
+      // 근무 타입별 필수 필드 검증 및 설정
+      let additionalFields = {};
+
+      const request: any = {
         name,
         type,
-        workCycle: undefined as WorkCycle | undefined,
-        startDayOfWeek: toEnumDay(
-          String(policyData.cycleStartDay || "monday")
-        ) as DayOfWeek,
-        workCycleStartDay: undefined as number | undefined,
+        workCycle: policyData.workCycle,
+        startDayOfWeek: policyData.startDayOfWeek || DayOfWeek.MONDAY,
+        workCycleStartDay: policyData.workCycleStartDay,
         workDays,
-        weeklyWorkingDays,
-        startTime, // string "HH:mm:ss"
-        startTimeEnd: undefined,
-        workHours,
-        workMinutes,
-        coreTimeStart: undefined,
-        coreTimeEnd: undefined,
-        breakStartTime, // string "HH:mm:ss"
-        breakEndTime, // string "HH:mm:ss"
-        avgWorkTime: undefined,
-        totalRequiredMinutes,
+        weeklyWorkingDays: workDays.length,
+        workHours: workHours,
+        workMinutes: workMinutes,
+        coreTimeStart: toTimeString(policyData.coreTimeStart),
+        coreTimeEnd: toTimeString(policyData.coreTimeEnd),
+        avgWorkTime: toTimeString(policyData.avgWorkTime),
+        totalRequiredMinutes: totalRequiredMinutes,
         annualLeaves: policyData.annualLeaves || [],
       };
 
-      const created = await workPolicyApi.createWorkPolicy(request as any);
-      toast.success(`정책이 생성되었습니다: ${created.name}`);
+      // 근무 타입별 필수 필드 설정
+      if (type === WorkPolicyType.FLEXIBLE) {
+        if (!policyData.startTime || !policyData.startTimeEnd) {
+          toast.error(
+            "시차 근무는 출근 시작 시간과 출근 종료 시간이 필수입니다."
+          );
+          return;
+        }
+        request.startTime = toTimeString(policyData.startTime);
+        request.startTimeEnd = toTimeString(policyData.startTimeEnd);
+        request.breakStartTime = toTimeString(policyData.breakStartTime);
+        request.breakEndTime = toTimeString(policyData.breakEndTime);
+      } else if (type === WorkPolicyType.OPTIONAL) {
+        // 선택 근무: coreTimeStart, coreTimeEnd 필수
+        if (!policyData.coreTimeStart || !policyData.coreTimeEnd) {
+          toast.error(
+            "선택 근무는 코어 타임 시작 시간과 종료 시간이 필수입니다."
+          );
+          return;
+        }
+        additionalFields = {
+          coreTimeStart: toTimeString(policyData.coreTimeStart),
+          coreTimeEnd: toTimeString(policyData.coreTimeEnd),
+        };
+      } else if (type === WorkPolicyType.SHIFT) {
+        // 교대 근무: weeklyWorkingDays 필수
+        additionalFields = {
+          weeklyWorkingDays: policyData.weeklyWorkingDays || workDays.length,
+        };
+      }
+
+      // 일반적인 startTime/endTime은 FLEXIBLE이 아닐 때만 설정
+      if (type !== WorkPolicyType.FLEXIBLE) {
+        request.startTime = toTimeString(policyData.startTime);
+        request.endTime = toTimeString(policyData.endTime);
+      }
+
+      // OPTIONAL(선택 근무) 외 타입에서만 휴게 시작/종료 시간을 전송
+      if (type !== WorkPolicyType.OPTIONAL) {
+        const firstBreak = (formData.breakTimes || [
+          { start: "12:00", end: "13:00" },
+        ])[0];
+        request.breakStartTime = toTimeString(firstBreak?.start) || "12:00:00";
+        request.breakEndTime = toTimeString(firstBreak?.end) || "13:00:00";
+      }
+
+      // FLEXIBLE(시차 근무)에서는 endTime을 전송하지 않음
+      if (type === WorkPolicyType.FLEXIBLE) {
+        delete request.endTime;
+      }
+
+      console.log("정책 생성 요청 데이터:", request);
+      console.log("근무 타입별 추가 필드:", additionalFields);
+      console.log("원본 폼 데이터:", policyData);
+
+      const created = await workPolicyApi.createWorkPolicy(request);
+
+      console.log("정책 생성 응답:", created);
+
+      // 안전한 응답 처리
+      if (created && created.name) {
+        toast.success(`정책이 생성되었습니다: ${created.name}`);
+      } else if (created) {
+        toast.success("정책이 생성되었습니다.");
+        console.warn("정책 생성 응답에 name 속성이 없습니다:", created);
+      } else {
+        toast.success("정책이 생성되었습니다.");
+        console.error("정책 생성 응답이 null/undefined입니다:", created);
+      }
+
       router.push("/settings/workpolicies");
     } catch (error: any) {
       console.error("정책 생성 실패:", error);
-      toast.error(`정책 생성 실패: ${error?.message || "알 수 없는 오류"}`);
+      console.error("오류 상세:", {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+      });
+
+      const errorMessage =
+        error?.response?.data?.message || error?.message || "알 수 없는 오류";
+      toast.error(`정책 생성 실패: ${errorMessage}`);
     }
   };
 
@@ -217,9 +284,6 @@ export default function CreateWorkPolicyPage(): JSX.Element {
           <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
           <h1 className={`${typography.h1} text-gray-800`}>근무 정책 생성</h1>
         </div>
-        <p className="text-gray-600 mt-2 ml-4">
-          새로운 근무 정책을 생성하고 설정하세요
-        </p>
       </div>
 
       {/* 메인 컨텐츠 - 반응형 레이아웃 */}
@@ -253,16 +317,6 @@ export default function CreateWorkPolicyPage(): JSX.Element {
                 {workType === "time" && "시차 근무 설정"}
                 {workType === "select" && "선택 근무 설정"}
               </h3>
-              <p className="text-gray-600">
-                {workType === "fixed" &&
-                  "정해진 시간에 고정적으로 근무하는 정책을 설정합니다"}
-                {workType === "shift" &&
-                  "교대 근무를 위한 시간대와 패턴을 설정합니다"}
-                {workType === "time" &&
-                  "시차 근무를 위한 시간대와 통신 방식을 설정합니다"}
-                {workType === "select" &&
-                  "유연한 근무 시간을 선택할 수 있는 정책을 설정합니다"}
-              </p>
             </div>
 
             {/* 동적으로 변경되는 폼 영역 */}

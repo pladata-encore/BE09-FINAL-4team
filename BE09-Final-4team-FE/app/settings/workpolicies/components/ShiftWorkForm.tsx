@@ -33,6 +33,7 @@ interface FormData {
   workMinutes?: string;
   breakHours?: string;
   breakMinutes?: string;
+  weeklyWorkingDays?: number;
 }
 
 interface ShiftWorkFormProps {
@@ -278,6 +279,31 @@ export function ShiftWorkForm({
             />
           </div>
           <span className="text-sm text-gray-600">분</span>
+        </div>
+      </div>
+
+      {/* 주간 근무일 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-700">주간 근무일</p>
+          <p className="text-xs text-gray-500">일주일 중 근무하는 일수</p>
+        </div>
+        <div className="w-32">
+          <Select
+            value={(formData.weeklyWorkingDays || "5").toString()}
+            onValueChange={(value) => updateFormData("weeklyWorkingDays", parseInt(value))}
+          >
+            <SelectTrigger className="bg-white/60 backdrop-blur-sm border-gray-200/50 rounded-xl">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {workingDaysOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

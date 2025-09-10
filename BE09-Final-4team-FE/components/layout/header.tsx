@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { userApi } from "@/lib/services/user/api";
 import ProfileModal from '@/app/members/components/ProfileModal'
 import { NotificationsDropdown } from '@/components/ui/notifications-dropdown'
-import { getAccessToken } from '@/lib/services/common/api-client'
+import { attachmentApi } from '@/lib/services/attachment/api'
 
 interface Employee {
   id: string
@@ -57,23 +57,7 @@ export function Header({
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
 
   const getAuthenticatedImageUrl = async (fileId: string) => {
-    try {
-      const token = getAccessToken()
-      if (!token) return null
-
-      const response = await fetch(`http://localhost:9000/api/attachments/${fileId}/view`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const blob = await response.blob()
-        return URL.createObjectURL(blob)
-      }
-    } catch (error) {
-      console.error('이미지 로드 실패:', error)
-    }
+    return await attachmentApi.viewFile(fileId)
     return null
   }
 
@@ -215,7 +199,7 @@ export function Header({
                     <p className="text-sm font-medium leading-none">{displayName}</p>
                     <p className="text-xs leading-none text-muted-foreground">{displayEmail}</p>
                     {employeeData && (
-                      <p className="text-xs leading-none text-muted-foreground">{employeeData.position} • {employeeData.organization}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{employeeData.position} {employeeData.organization}</p>
                     )}
                   </div>
                 </div>

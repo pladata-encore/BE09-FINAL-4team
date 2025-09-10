@@ -47,6 +47,10 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { userApi } from "@/lib/services/user/api";
+import {
+  workScheduleApi,
+  employeeLeaveBalanceApi,
+} from "@/lib/services/attendance/api";
 
 interface MemberOrganizations {
   main: string | null;
@@ -76,13 +80,12 @@ const initialFormData = {
   workPolicies: [] as string[],
 };
 
-
 const checkEmailDuplicate = async (email: string) => {
   try {
     const users = await userApi.getAllUsers();
-    return users.some(user => user.email === email);
+    return users.some((user) => user.email === email);
   } catch (error) {
-    console.error('이메일 중복 검증 오류:', error);
+    console.error("이메일 중복 검증 오류:", error);
     return false;
   }
 };
@@ -127,13 +130,13 @@ export default function AddMemberModal({
     loading: orgLoading,
     error: orgError,
   } = useOrganizationsList();
-  
+
   const {
     workPolicies,
     loading: workPolicyLoading,
     error: workPolicyError,
   } = useWorkPoliciesList();
-  
+
   const {
     ranks,
     positions,
@@ -443,20 +446,68 @@ export default function AddMemberModal({
     }
   };
 
+  // 근무 정책 자동 적용 함수
+  const applyWorkPolicyAutomatically = async (userId: number) => {
+    if (!formData.workPolicies.length) return;
+
+    // 현재 날짜부터 한 달간의 스케줄 적용
+    const today = new Date();
+    const startDate = today.toISOString().split("T")[0]; // YYYY-MM-DD
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+      .toISOString()
+      .split("T")[0]; // 이번 달 마지막 날
+
+    try {
+      // 1. 기존 스케줄이 있다면 초기화하고 새 근무 정책 적용
+      await workScheduleApi.applyWorkPolicyToSchedule(
+        userId,
+        startDate,
+        endDate
+      );
+      toast.success("근무 정책이 스케줄에 성공적으로 적용되었습니다.");
+
+      // 2. 연차 정책 부여 (근무년수 기반)
+      await employeeLeaveBalanceApi.grantAnnualLeaveByWorkYears(userId);
+      toast.success("연차 정책이 성공적으로 부여되었습니다.");
+    } catch (error) {
+      console.error("자동화 로직 실행 중 오류:", error);
+      toast.warning(
+        "사용자는 생성되었지만, 근무 정책 적용 중 일부 오류가 발생했습니다. 관리자에게 문의해주세요."
+      );
+    }
+  };
+
   const handleSaveConfirm = async () => {
     if (!formData.email) {
-      toast.error('이메일을 입력해주세요.');
+      toast.error("이메일을 입력해주세요.");
       return;
     }
 
     const isDuplicate = await checkEmailDuplicate(formData.email);
     if (isDuplicate) {
-      toast.error('이미 존재하는 이메일입니다.');
+      toast.error("이미 존재하는 이메일입니다.");
       return;
     }
 
+    // 사용자 생성 (원래 로직 유지)
     onSave(formData);
     setShowSaveConfirm(false);
+
+    // TODO: 실제 프로덕션에서는 다음과 같이 구현하세요:
+    // 1. 사용자 생성 API 호출 후 사용자 ID를 받아옴
+    // 2. 받아온 사용자 ID로 applyWorkPolicyAutomatically(userId) 호출
+    //
+    // 예시:
+    // try {
+    //   const createdUser = await userApi.createUser(processedFormData);
+    //   toast.success("사용자가 성공적으로 생성되었습니다.");
+    //
+    //   if (createdUser?.id && formData.workPolicies.length > 0) {
+    //     await applyWorkPolicyAutomatically(createdUser.id);
+    //   }
+    // } catch (error) {
+    //   toast.error("사용자 생성에 실패했습니다.");
+    // }
   };
 
   const handleSaveCancel = () => {
@@ -914,7 +965,9 @@ export default function AddMemberModal({
                             <div className="flex items-center gap-2">
                               {formData.workPolicies?.length > 0
                                 ? workPolicies.find(
-                                    (p) => p.id.toString() === formData.workPolicies[0]
+                                    (p) =>
+                                      p.id.toString() ===
+                                      formData.workPolicies[0]
                                   )?.name ?? "근무 정책을 선택하세요"
                                 : "근무 정책을 선택하세요"}
                             </div>
@@ -945,16 +998,22 @@ export default function AddMemberModal({
                         {!workPolicyLoading &&
                           !workPolicyError &&
                           workPolicies.map((policy) => {
-                            const isSelected = formData.workPolicies?.includes(policy.id.toString());
+                            const isSelected = formData.workPolicies?.includes(
+                              policy.id.toString()
+                            );
                             return (
                               <div
                                 key={policy.id.toString()}
                                 className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
-                                onClick={() => handleWorkPolicyToggle(policy.id.toString())}
+                                onClick={() =>
+                                  handleWorkPolicyToggle(policy.id.toString())
+                                }
                               >
                                 <div
                                   className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                    isSelected ? "bg-blue-50 border-blue-500" : "border-gray-300"
+                                    isSelected
+                                      ? "bg-blue-50 border-blue-500"
+                                      : "border-gray-300"
                                   }`}
                                 >
                                   {isSelected && (
@@ -966,7 +1025,8 @@ export default function AddMemberModal({
                                     {policy.name}
                                   </div>
                                   <div className="text-sm text-gray-500">
-                                    {policy.type} - {policy.workHours}시간 {policy.workMinutes}분
+                                    {policy.type} - {policy.workHours}시간{" "}
+                                    {policy.workMinutes}분
                                   </div>
                                 </div>
                               </div>

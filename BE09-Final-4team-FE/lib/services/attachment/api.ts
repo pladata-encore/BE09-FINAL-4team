@@ -73,13 +73,26 @@ export const attachmentApi = {
     return `/api/attachments/${fileId}/download`
   },
 
+  // 파일 보기 (인증된 이미지 URL 생성)
+  viewFile: async (fileId: string): Promise<string | null> => {
+    try {
+      const response = await apiClient.get(`/api/attachments/${fileId}/view`, {
+        responseType: 'blob'
+      })
+      
+      if (response.data) {
+        return URL.createObjectURL(response.data)
+      }
+      return null
+    } catch (error) {
+      console.error('파일 보기 실패:', error)
+      return null
+    }
+  },
+
   // 파일 삭제 (ADMIN 권한 필요)
   deleteFile: async (fileId: string): Promise<void> => {
     await apiClient.delete<void>(`/api/attachments/${fileId}`)
   }
 }
 
-// 통합 Attachment API 객체
-export const attachmentService = {
-  ...attachmentApi
-}

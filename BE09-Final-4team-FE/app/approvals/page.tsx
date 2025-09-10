@@ -11,6 +11,7 @@ import { TemplateManagementModal } from "./components/TemplateManagementModal"
 import { DocumentWriterModal } from "./components/DocumentWriterModal"
 import { colors, typography } from "@/lib/design-tokens"
 import { useDocuments } from "./hooks/useApproval"
+import { useAuth } from "@/hooks/use-auth"
 import { DocumentSummaryResponse, DocumentStatus, DocumentRole, TemplateSummaryResponse, TemplateResponse } from "@/lib/services/approval/types"
 import { getStatusText } from "./utils"
 import { TemplateIcon } from "./components/common/TemplateIcon"
@@ -27,6 +28,7 @@ import {
 } from "lucide-react"
 
 export default function ApprovalsPage() {
+  const { isAdmin } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState<"inProgress" | "completed">("inProgress")
   const [selectedDocumentSummary, setSelectedDocumentSummary] = useState<DocumentSummaryResponse | null>(null)
@@ -224,10 +226,12 @@ export default function ApprovalsPage() {
           />
         </div>
         <div className="flex gap-3">
-          <GradientButton variant="secondary" onClick={handleFormTemplateManagement}>
-            <Settings className="w-4 h-4 mr-2" />
-            문서 양식 관리
-          </GradientButton>
+          {isAdmin && (
+            <GradientButton variant="secondary" onClick={handleFormTemplateManagement}>
+              <Settings className="w-4 h-4 mr-2" />
+              문서 양식 관리
+            </GradientButton>
+          )}
           <GradientButton variant="primary" onClick={handleNewApprovalClick}>
             <Plus className="w-4 h-4 mr-2" />
             문서 작성

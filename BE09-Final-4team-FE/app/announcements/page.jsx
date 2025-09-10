@@ -58,7 +58,7 @@ async function fetchAnnouncements({ page, search }) {
 export default function AnnouncementsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isLoggedIn, loading: authLoading } = useAuth();
+  const { isLoggedIn, loading: authLoading, isAdmin } = useAuth();
   const [inputText, setInputText] = useState("");
   const [searchTerm, setSearchTerm] = useState("")
   const itemsPerPage = 10;
@@ -289,13 +289,15 @@ export default function AnnouncementsPage() {
             <Search className="w-4 h-4" />
           </button>
         </div>
-        <GradientButton
-          variant="primary"
-          onClick={handleWriteAnnouncement}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          공지 작성
-        </GradientButton>
+        {isAdmin && (
+          <GradientButton
+            variant="primary"
+            onClick={handleWriteAnnouncement}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            공지 작성
+          </GradientButton>
+        )}
       </div>
 
       {/* Announcements List */}

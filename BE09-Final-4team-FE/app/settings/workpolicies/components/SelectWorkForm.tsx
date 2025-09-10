@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -40,6 +40,16 @@ export function SelectWorkForm({
   const updateFormData = (field: string, value: any): void => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  // 기본값 설정
+  useEffect(() => {
+    if (!formData.coreTimeStart) {
+      updateFormData("coreTimeStart", "10:00");
+    }
+    if (!formData.coreTimeEnd) {
+      updateFormData("coreTimeEnd", "16:00");
+    }
+  }, []);
 
   // 연차 정책 관리 함수들
   const addAnnualLeave = (): void => {

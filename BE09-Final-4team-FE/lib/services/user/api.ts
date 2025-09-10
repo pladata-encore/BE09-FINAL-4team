@@ -126,4 +126,11 @@ export const userApi = {
         const response = await apiClient.post('/api/users/sync-organizations');
         return response.data;
     },
+
+    updateProfileImage: async (userId: string, fileId: string): Promise<ApiResult<void>> => {
+        const response = await apiClient.patch(`/api/users/${userId}/profile-image`, {
+            profileImageUrl: fileId
+        });
+        return response.data;
+    },
 };

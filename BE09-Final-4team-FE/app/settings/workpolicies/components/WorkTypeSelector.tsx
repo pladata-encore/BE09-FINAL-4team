@@ -71,7 +71,7 @@ export function WorkTypeSelector({
               <span className="text-xs text-gray-500 group-hover:text-blue-500">
                 {type.id === "fixed" && "정해진 시간에 고정 근무"}
                 {type.id === "shift" && "교대 근무 시간대 설정"}
-                {type.id === "time" && "시차 근무 및 통신 설정"}
+                {type.id === "time" && "시차 근무 설정"}
                 {type.id === "select" && "유연한 근무 시간 선택"}
               </span>
             </div>

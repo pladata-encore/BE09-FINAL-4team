@@ -25,7 +25,7 @@ export function ReferenceFilesManager({
           <div key={file.fileId} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-blue-900 truncate">{file.fileName}</p>
-              <p className="text-xs text-blue-700 mt-1">{(file.fileSize / 1024).toFixed(1)}KB • {file.contentType}</p>
+              {/* <p className="text-xs text-blue-700 mt-1">{(file.fileSize / 1024).toFixed(1)}KB • {file.contentType}</p> */}
             </div>
             <Tooltip>
               <TooltipTrigger asChild>

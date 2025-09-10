@@ -59,17 +59,10 @@ public class EmployeeLeaveBalanceServiceImpl implements EmployeeLeaveBalanceServ
         
         // 2. 근무년수 조회 (user-service의 전용 API 사용)
         Integer workYears = null;
-        try {
-            Map<String, Integer> workYearsResponse = userServiceClient.getUserWorkYears(employeeId);
-            workYears = workYearsResponse.get("workYears");
-            log.info("user-service에서 조회된 근무년수: {}년", workYears);
-        } catch (Exception e) {
-            log.warn("user-service에서 근무년수 조회 실패, 사용자 정보에서 확인: {}", e.getMessage());
-            // fallback: 기존 사용자 정보에서 workYears 확인
-            Object workYearsObj = user.get("workYears");
-            if (workYearsObj != null) {
-                workYears = Integer.valueOf(workYearsObj.toString());
-            }
+        Object workYearsObj = user.get("workYears");
+        if (workYearsObj != null) {
+            workYears = Integer.valueOf(workYearsObj.toString());
+            log.info("사용자 정보에서 조회된 근무년수: {}년", workYears);
         }
         
         if (workYears == null) {
@@ -115,11 +108,12 @@ public class EmployeeLeaveBalanceServiceImpl implements EmployeeLeaveBalanceServ
                         .remainingDays(annualLeave.getLeaveDays())
                         .usedLeaveDays(0)
                         .workYears(workYears)
+                        .workPolicyId(workPolicyId)
                         .build();
                 
                 grantedLeaves.add(leaveBalance);
-                log.info("연차 부여: employeeId={}, type={}, days={}, workYears={}", 
-                        employeeId, leaveType, annualLeave.getLeaveDays(), workYears);
+                log.info("연차 부여: employeeId={}, type={}, days={}, workYears={}, workPolicyId={}", 
+                        employeeId, leaveType, annualLeave.getLeaveDays(), workYears, workPolicyId);
             }
         }
         
@@ -311,7 +305,7 @@ public class EmployeeLeaveBalanceServiceImpl implements EmployeeLeaveBalanceServ
         log.info("모든 직원 연차 초기화 및 재부여 완료");
     }
     
-
+    
     
     // Helper methods
     

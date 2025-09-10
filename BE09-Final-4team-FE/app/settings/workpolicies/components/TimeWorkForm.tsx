@@ -10,57 +10,67 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import SelectTime from "@/components/clock/SelectTime";
-import { AnnualLeaveRequestDto } from "@/lib/services/attendance";
 
-// Type definitions
+// 백엔드와 매핑되는 타입 정의
 interface AnnualLeavePolicy {
-  id?: string;
   name: string;
   minYears: number;
   maxYears: number;
   leaveDays: number;
-  holidayDays: number;
+  holidayDays?: number; // user-service에서는 필수, attendance-service에서는 선택
 }
 
-interface FormData {
-  [key: string]: any;
-  workName?: string;
-  annualLeaves?: AnnualLeavePolicy[];
-  workingDays?: Record<string, boolean>;
-  weeklyHoliday?: Record<string, boolean>;
-  cycleStartDay?: string;
-  startTimeStart?: string;
-  startTimeEnd?: string;
-  workHours?: string;
-  workMinutes?: string;
-  breakTimes?: Array<{ start: string; end: string }>;
+interface FlexibleWorkFormData {
+  // 필수 필드들
+  name: string; // 근무정책 이름
+  type: "FLEXIBLE"; // 시차근무 고정
+  startDayOfWeek: string; // 근무 시작 요일 (MONDAY, TUESDAY, etc.)
+  workDays: string[]; // 근무 요일 리스트
+  startTime: string; // 출근 시작 시간 (HH:mm)
+  startTimeEnd: string; // 출근 종료 시간 (HH:mm)
+  workHours: number; // 근무 시간
+  workMinutes: number; // 근무 분
+  breakStartTime: string; // 휴게 시작 시간
+  breakEndTime: string; // 휴게 종료 시간
+  totalRequiredMinutes: number; // 총 필요 분 (주간 기준)
+  annualLeaves: AnnualLeavePolicy[]; // 연차 목록
+
+  // 선택 필드들
+  holidayDays?: string[]; // 휴일 요일 리스트
+  workCycle?: string; // 근무 주기 (시차근무에서는 선택사항)
+  workCycleStartDay?: number; // 근무 주기 시작일
 }
 
 interface TimeWorkFormProps {
-  formData: FormData;
-  setFormData: (data: FormData | ((prev: FormData) => FormData)) => void;
+  formData: FlexibleWorkFormData;
+  setFormData: (
+    data:
+      | FlexibleWorkFormData
+      | ((prev: FlexibleWorkFormData) => FlexibleWorkFormData)
+  ) => void;
 }
 
 interface TimePickerState {
-  startTimeStart: boolean;
+  startTime: boolean;
   startTimeEnd: boolean;
-  breakTimeStart: boolean;
-  breakTimeEnd: boolean;
+  breakStartTime: boolean;
+  breakEndTime: boolean;
 }
 
 interface TimePickerRefs {
-  startTimeStart: React.RefObject<HTMLDivElement | null>;
+  startTime: React.RefObject<HTMLDivElement | null>;
   startTimeEnd: React.RefObject<HTMLDivElement | null>;
-  breakTimeStart: React.RefObject<HTMLDivElement | null>;
-  breakTimeEnd: React.RefObject<HTMLDivElement | null>;
+  breakStartTime: React.RefObject<HTMLDivElement | null>;
+  breakEndTime: React.RefObject<HTMLDivElement | null>;
 }
 
 interface WeekDay {
   id: string;
   name: string;
   short: string;
+  value: string; // MONDAY, TUESDAY, etc.
 }
 
 interface CycleStartOption {
@@ -73,25 +83,31 @@ export function TimeWorkForm({
   setFormData,
 }: TimeWorkFormProps): JSX.Element {
   const [showTimePicker, setShowTimePicker] = useState<TimePickerState>({
-    startTimeStart: false,
+    startTime: false,
     startTimeEnd: false,
-    breakTimeStart: false,
-    breakTimeEnd: false,
+    breakStartTime: false,
+    breakEndTime: false,
   });
 
   const timePickerRefs: TimePickerRefs = {
-    startTimeStart: useRef<HTMLDivElement>(null),
+    startTime: useRef<HTMLDivElement>(null),
     startTimeEnd: useRef<HTMLDivElement>(null),
-    breakTimeStart: useRef<HTMLDivElement>(null),
-    breakTimeEnd: useRef<HTMLDivElement>(null),
+    breakStartTime: useRef<HTMLDivElement>(null),
+    breakEndTime: useRef<HTMLDivElement>(null),
   };
 
-  const updateFormData = (field: string, value: any): void => {
+  const updateFormData = (
+    field: keyof FlexibleWorkFormData,
+    value: any
+  ): void => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleTimeSelect = (field: string, time: string): void => {
-    updateFormData(field, time);
+  const handleTimeSelect = (
+    field: keyof TimePickerState,
+    time: string
+  ): void => {
+    updateFormData(field as keyof FlexibleWorkFormData, time);
     setShowTimePicker((prev) => ({ ...prev, [field]: false }));
   };
 
@@ -106,7 +122,6 @@ export function TimeWorkForm({
   // 연차 정책 관리 함수들
   const addAnnualLeave = (): void => {
     const newPolicy: AnnualLeavePolicy = {
-      id: Date.now().toString(),
       name: `정책 ${(formData.annualLeaves || []).length + 1}`,
       minYears: 0,
       maxYears: 1,
@@ -156,57 +171,56 @@ export function TimeWorkForm({
   }, [showTimePicker]);
 
   const weekDays: WeekDay[] = [
-    { id: "monday", name: "월", short: "월" },
-    { id: "tuesday", name: "화", short: "화" },
-    { id: "wednesday", name: "수", short: "수" },
-    { id: "thursday", name: "목", short: "목" },
-    { id: "friday", name: "금", short: "금" },
-    { id: "saturday", name: "토", short: "토" },
-    { id: "sunday", name: "일", short: "일" },
+    { id: "monday", name: "월", short: "월", value: "MONDAY" },
+    { id: "tuesday", name: "화", short: "화", value: "TUESDAY" },
+    { id: "wednesday", name: "수", short: "수", value: "WEDNESDAY" },
+    { id: "thursday", name: "목", short: "목", value: "THURSDAY" },
+    { id: "friday", name: "금", short: "금", value: "FRIDAY" },
+    { id: "saturday", name: "토", short: "토", value: "SATURDAY" },
+    { id: "sunday", name: "일", short: "일", value: "SUNDAY" },
   ];
 
   const cycleStartOptions: CycleStartOption[] = [
-    { value: "monday", label: "월요일" },
-    { value: "tuesday", label: "화요일" },
-    { value: "wednesday", label: "수요일" },
-    { value: "thursday", label: "목요일" },
-    { value: "friday", label: "금요일" },
-    { value: "saturday", label: "토요일" },
-    { value: "sunday", label: "일요일" },
+    { value: "MONDAY", label: "월요일" },
+    { value: "TUESDAY", label: "화요일" },
+    { value: "WEDNESDAY", label: "수요일" },
+    { value: "THURSDAY", label: "목요일" },
+    { value: "FRIDAY", label: "금요일" },
+    { value: "SATURDAY", label: "토요일" },
+    { value: "SUNDAY", label: "일요일" },
   ];
 
-  const handleDayToggle = (field: string, dayId: string): void => {
-    const currentDays = formData[field] || {
-      monday: field === "workingDays" ? true : false,
-      tuesday: field === "workingDays" ? true : false,
-      wednesday: field === "workingDays" ? true : false,
-      thursday: field === "workingDays" ? true : false,
-      friday: field === "workingDays" ? true : false,
-      saturday: false,
-      sunday: field === "weeklyHoliday" ? true : false,
-    };
-
-    updateFormData(field, {
-      ...currentDays,
-      [dayId]: !currentDays[dayId],
-    });
+  const handleWorkDayToggle = (dayValue: string): void => {
+    const currentWorkDays = formData.workDays || [];
+    const updatedWorkDays = currentWorkDays.includes(dayValue)
+      ? currentWorkDays.filter((day) => day !== dayValue)
+      : [...currentWorkDays, dayValue];
+    updateFormData("workDays", updatedWorkDays);
   };
 
-  const addBreakTime = (): void => {
-    const currentBreaks = formData.breakTimes || [];
-    updateFormData("breakTimes", [
-      ...currentBreaks,
-      { start: "12:00", end: "13:00" },
-    ]);
+  const handleHolidayDayToggle = (dayValue: string): void => {
+    const currentHolidayDays = formData.holidayDays || [];
+    const updatedHolidayDays = currentHolidayDays.includes(dayValue)
+      ? currentHolidayDays.filter((day) => day !== dayValue)
+      : [...currentHolidayDays, dayValue];
+    updateFormData("holidayDays", updatedHolidayDays);
   };
 
-  const removeBreakTime = (index: number): void => {
-    const currentBreaks = formData.breakTimes || [];
-    updateFormData(
-      "breakTimes",
-      currentBreaks.filter((_, i) => i !== index)
-    );
+  // 총 필요 분 계산 (주간 기준)
+  const calculateTotalRequiredMinutes = (): number => {
+    const workDaysCount = formData.workDays?.length || 0;
+    const dailyWorkMinutes =
+      (formData.workHours || 0) * 60 + (formData.workMinutes || 0);
+    return workDaysCount * dailyWorkMinutes;
   };
+
+  // totalRequiredMinutes 자동 계산
+  useEffect(() => {
+    const totalMinutes = calculateTotalRequiredMinutes();
+    if (totalMinutes > 0) {
+      updateFormData("totalRequiredMinutes", totalMinutes);
+    }
+  }, [formData.workDays, formData.workHours, formData.workMinutes]);
 
   return (
     <div className="space-y-8">
@@ -214,10 +228,11 @@ export function TimeWorkForm({
       <div>
         <p className="text-sm text-gray-500 mb-2">근무 유형 이름</p>
         <Input
-          value={formData.workName || ""}
-          onChange={(e) => updateFormData("workName", e.target.value)}
+          value={formData.name || ""}
+          onChange={(e) => updateFormData("name", e.target.value)}
           className="bg-white/60 backdrop-blur-sm border-gray-200/50 rounded-xl"
           placeholder="시차 근무"
+          required
         />
       </div>
 
@@ -230,28 +245,21 @@ export function TimeWorkForm({
         {/* 근무 요일 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            근무 요일
+            근무 요일 <span className="text-red-500">*</span>
           </label>
           <p className="text-xs text-gray-500 mb-3">
             구성원이 근무해야하는 요일
           </p>
           <div className="grid grid-cols-7 gap-2">
             {weekDays.map((day) => {
-              const workingDays = formData.workingDays || {
-                monday: true,
-                tuesday: true,
-                wednesday: true,
-                thursday: true,
-                friday: true,
-                saturday: false,
-                sunday: false,
-              };
-              const isSelected = workingDays[day.id];
+              const isSelected =
+                formData.workDays?.includes(day.value) || false;
 
               return (
                 <button
                   key={day.id}
-                  onClick={() => handleDayToggle("workingDays", day.id)}
+                  type="button"
+                  onClick={() => handleWorkDayToggle(day.value)}
                   className={`p-3 rounded-lg border-2 transition-all duration-200 ${
                     isSelected
                       ? `border-blue-500 bg-blue-500 text-white`
@@ -275,21 +283,14 @@ export function TimeWorkForm({
           </p>
           <div className="grid grid-cols-7 gap-2">
             {weekDays.map((day) => {
-              const weeklyHoliday = formData.weeklyHoliday || {
-                monday: false,
-                tuesday: false,
-                wednesday: false,
-                thursday: false,
-                friday: false,
-                saturday: false,
-                sunday: true,
-              };
-              const isSelected = weeklyHoliday[day.id];
+              const isSelected =
+                formData.holidayDays?.includes(day.value) || false;
 
               return (
                 <button
                   key={day.id}
-                  onClick={() => handleDayToggle("weeklyHoliday", day.id)}
+                  type="button"
+                  onClick={() => handleHolidayDayToggle(day.value)}
                   className={`p-3 rounded-lg border-2 transition-all duration-200 ${
                     isSelected
                       ? `border-blue-500 bg-blue-500 text-white`
@@ -306,14 +307,14 @@ export function TimeWorkForm({
         {/* 근무 주기 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            근무 주기
+            근무 주기 <span className="text-red-500">*</span>
           </label>
           <p className="text-xs text-gray-500 mb-3">
             근무 주기가 시작되는 요일
           </p>
           <Select
-            value={formData.cycleStartDay || "monday"}
-            onValueChange={(value) => updateFormData("cycleStartDay", value)}
+            value={formData.startDayOfWeek || "MONDAY"}
+            onValueChange={(value) => updateFormData("startDayOfWeek", value)}
           >
             <SelectTrigger className="bg-white/60 backdrop-blur-sm border-gray-200/50 rounded-xl">
               <SelectValue />
@@ -331,7 +332,7 @@ export function TimeWorkForm({
         {/* 근무 시간 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            근무 시간
+            근무 시간 <span className="text-red-500">*</span>
           </label>
           <p className="text-xs text-gray-500 mb-3">출근 시각 및 근무 시간</p>
 
@@ -339,23 +340,23 @@ export function TimeWorkForm({
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm text-gray-600">출근</span>
             <div className="flex items-center gap-2">
-              <div className="relative" ref={timePickerRefs.startTimeStart}>
+              <div className="relative" ref={timePickerRefs.startTime}>
                 <button
                   type="button"
-                  onClick={() => openTimePicker("startTimeStart")}
+                  onClick={() => openTimePicker("startTime")}
                   className="w-40 px-3 py-2 text-sm bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg hover:bg-white/80 transition-colors text-center"
                 >
-                  {formData.startTimeStart || "09:00"}
+                  {formData.startTime || "09:00"}
                 </button>
 
                 {/* 시작 시간 드롭다운 */}
-                {showTimePicker.startTimeStart && (
+                {showTimePicker.startTime && (
                   <div className="absolute top-full left-0 z-50 mt-1">
                     <SelectTime
                       onTimeSelect={(time: string) =>
-                        handleTimeSelect("startTimeStart", time)
+                        handleTimeSelect("startTime", time)
                       }
-                      onClose={() => closeTimePicker("startTimeStart")}
+                      onClose={() => closeTimePicker("startTime")}
                       isDropdown={true}
                     />
                   </div>
@@ -395,18 +396,24 @@ export function TimeWorkForm({
                 type="number"
                 min="0"
                 max="24"
-                value={formData.workHours || "8"}
-                onChange={(e) => updateFormData("workHours", e.target.value)}
+                value={formData.workHours || 8}
+                onChange={(e) =>
+                  updateFormData("workHours", parseInt(e.target.value) || 0)
+                }
                 className="w-16 text-center bg-white/60 backdrop-blur-sm border-gray-200/50 rounded-lg"
+                required
               />
               <span className="text-sm text-gray-600">시간</span>
               <Input
                 type="number"
                 min="0"
                 max="59"
-                value={formData.workMinutes || "0"}
-                onChange={(e) => updateFormData("workMinutes", e.target.value)}
+                value={formData.workMinutes || 0}
+                onChange={(e) =>
+                  updateFormData("workMinutes", parseInt(e.target.value) || 0)
+                }
                 className="w-16 text-center bg-white/60 backdrop-blur-sm border-gray-200/50 rounded-lg"
+                required
               />
               <span className="text-sm text-gray-600">분</span>
             </div>
@@ -416,83 +423,59 @@ export function TimeWorkForm({
         {/* 추천 휴게 시간 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            추천 휴게 시간
+            추천 휴게 시간 <span className="text-red-500">*</span>
           </label>
           <p className="text-xs text-gray-500 mb-3">
             휴게로 자동 기록되는 시간대
           </p>
 
-          {(formData.breakTimes || [{ start: "12:00", end: "13:00" }]).map(
-            (breakTime, index) => (
-              <div key={index} className="flex items-center gap-2 mb-2">
-                <div className="relative" ref={timePickerRefs.breakTimeStart}>
-                  <button
-                    type="button"
-                    onClick={() => openTimePicker("breakTimeStart")}
-                    className="w-40 px-3 py-2 text-sm bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg hover:bg-white/80 transition-colors text-center"
-                  >
-                    {breakTime.start}
-                  </button>
+          <div className="flex items-center gap-2">
+            <div className="relative" ref={timePickerRefs.breakStartTime}>
+              <button
+                type="button"
+                onClick={() => openTimePicker("breakStartTime")}
+                className="w-40 px-3 py-2 text-sm bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg hover:bg-white/80 transition-colors text-center"
+              >
+                {formData.breakStartTime || "12:00"}
+              </button>
 
-                  {/* 휴게 시작 시간 드롭다운 */}
-                  {showTimePicker.breakTimeStart && (
-                    <div className="absolute top-full left-0 z-50 mt-1">
-                      <SelectTime
-                        onTimeSelect={(time: string) =>
-                          handleTimeSelect("breakTimeStart", time)
-                        }
-                        onClose={() => closeTimePicker("breakTimeStart")}
-                        isDropdown={true}
-                      />
-                    </div>
-                  )}
+              {/* 휴게 시작 시간 드롭다운 */}
+              {showTimePicker.breakStartTime && (
+                <div className="absolute top-full left-0 z-50 mt-1">
+                  <SelectTime
+                    onTimeSelect={(time: string) =>
+                      handleTimeSelect("breakStartTime", time)
+                    }
+                    onClose={() => closeTimePicker("breakStartTime")}
+                    isDropdown={true}
+                  />
                 </div>
-                <span className="text-gray-400">-</span>
-                <div className="relative" ref={timePickerRefs.breakTimeEnd}>
-                  <button
-                    type="button"
-                    onClick={() => openTimePicker("breakTimeEnd")}
-                    className="w-40 px-3 py-2 text-sm bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg hover:bg-white/80 transition-colors text-center"
-                  >
-                    {breakTime.end}
-                  </button>
+              )}
+            </div>
+            <span className="text-gray-400">-</span>
+            <div className="relative" ref={timePickerRefs.breakEndTime}>
+              <button
+                type="button"
+                onClick={() => openTimePicker("breakEndTime")}
+                className="w-40 px-3 py-2 text-sm bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg hover:bg-white/80 transition-colors text-center"
+              >
+                {formData.breakEndTime || "13:00"}
+              </button>
 
-                  {/* 휴게 종료 시간 드롭다운 */}
-                  {showTimePicker.breakTimeEnd && (
-                    <div className="absolute top-full left-0 z-50 mt-1">
-                      <SelectTime
-                        onTimeSelect={(time: string) =>
-                          handleTimeSelect("breakTimeEnd", time)
-                        }
-                        onClose={() => closeTimePicker("breakTimeEnd")}
-                        isDropdown={true}
-                      />
-                    </div>
-                  )}
+              {/* 휴게 종료 시간 드롭다운 */}
+              {showTimePicker.breakEndTime && (
+                <div className="absolute top-full left-0 z-50 mt-1">
+                  <SelectTime
+                    onTimeSelect={(time: string) =>
+                      handleTimeSelect("breakEndTime", time)
+                    }
+                    onClose={() => closeTimePicker("breakEndTime")}
+                    isDropdown={true}
+                  />
                 </div>
-                {(formData.breakTimes || []).length > 1 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeBreakTime(index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    삭제
-                  </Button>
-                )}
-              </div>
-            )
-          )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={addBreakTime}
-            className="flex items-center gap-2 mt-2"
-          >
-            <Plus className="w-4 h-4" />
-            추가하기
-          </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -504,7 +487,7 @@ export function TimeWorkForm({
           </label>
           {(formData.annualLeaves || []).map((policy, index) => (
             <div
-              key={policy.id || index}
+              key={index}
               className="grid grid-cols-10 gap-2 mb-3 p-3 bg-gray-50 rounded-lg"
             >
               {/* 최소 근무년수 */}
@@ -573,7 +556,7 @@ export function TimeWorkForm({
                 <label className="block text-xs text-gray-600 mb-1">휴일</label>
                 <Input
                   type="number"
-                  value={policy.holidayDays}
+                  value={policy.holidayDays || 0}
                   onChange={(e) =>
                     updateAnnualLeave(
                       index,
@@ -605,7 +588,8 @@ export function TimeWorkForm({
                 <p className="text-xs text-gray-600">
                   근무 {policy.minYears}년 ~ {policy.maxYears}년: 연차{" "}
                   {policy.leaveDays}일
-                  {policy.holidayDays > 0 && `, 휴일 ${policy.holidayDays}일`}
+                  {(policy.holidayDays || 0) > 0 &&
+                    `, 휴일 ${policy.holidayDays}일`}
                 </p>
               </div>
             </div>
@@ -622,6 +606,10 @@ export function TimeWorkForm({
           </Button>
         </div>
       </div>
+
+      {/* 숨겨진 필드들 (백엔드 전송용) */}
+      <input type="hidden" value="FLEXIBLE" />
+      <input type="hidden" value={formData.totalRequiredMinutes || 0} />
     </div>
   );
 }

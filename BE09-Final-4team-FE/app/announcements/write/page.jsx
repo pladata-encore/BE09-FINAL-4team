@@ -73,7 +73,7 @@ export default function NoticeWritePage() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout requireAuth requireAdmin>
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-8">
           <button

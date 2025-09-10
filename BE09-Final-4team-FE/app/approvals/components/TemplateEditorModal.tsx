@@ -277,7 +277,7 @@ function FieldConfigurationManager({
                 <p className="font-medium text-sm">{field.name}</p>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">{field.fieldType}</Badge>
-                  {field.required && <Badge variant="destructive" className="text-xs">필수</Badge>}
+                  {field.required && <Badge variant="secondary" className="text-xs">필수</Badge>}
                 </div>
               </div>
             </div>

@@ -40,6 +40,9 @@ interface WorkPolicy {
   weeklyWorkingDays?: number;
   coreTimeStartText?: string;
   coreTimeEndText?: string;
+  startTimeText?: string; // 추가: 출근 시간 텍스트
+  endTimeText?: string; // 추가: 퇴근 시간 텍스트
+  startTimeEndText?: string; // 추가: 시차 근무 출근 종료 시간 텍스트
   isHolidayFixed?: boolean;
   isFlexibleWork?: boolean;
   isShiftWork?: boolean;
@@ -176,7 +179,7 @@ function PolicyList({
               {/* Policy Header */}
               <div className="flex items-center gap-3 mb-4">
                 <div
-                  className={`w-10 h-10 bg-gradient-to-r ${displayData.color} rounded-lg flex items-center justify-center`}
+                  className={`w-10 h-10 bg-gradient-to-r ${policy.color} rounded-lg flex items-center justify-center`}
                 >
                   <IconComponent className="w-5 h-5 text-white" />
                 </div>
@@ -218,28 +221,19 @@ function PolicyList({
 
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">근무 시간</span>
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      value={displayData.workHours || ""}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "workHours",
-                          parseInt(e.target.value) || 0
-                        )
-                      }
-                      className="w-20 text-right font-medium text-gray-800 bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-xl px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  ) : (
-                    <span className="font-medium text-gray-800">
-                      {displayData.workHours != null
-                        ? `${displayData.workHours}시간`
-                        : "-"}{" "}
-                      {displayData.workMinutes != null
-                        ? `${displayData.workMinutes}분`
-                        : ""}
-                    </span>
-                  )}
+                  <span className="font-medium text-gray-800">
+                    {displayData.type === "SHIFT" &&
+                    (displayData.workHours != null ||
+                      displayData.workMinutes != null)
+                      ? `${displayData.workHours ?? 0}h ${
+                          displayData.workMinutes ?? 0
+                        }m`
+                      : displayData.type !== "OPTIONAL" &&
+                        displayData.startTimeText &&
+                        displayData.endTimeText
+                      ? `${displayData.startTimeText} ~ ${displayData.endTimeText}`
+                      : "-"}
+                  </span>
                 </div>
 
                 <div className="flex justify-between items-center">
@@ -384,32 +378,94 @@ export default function WorkPoliciesPage(): ReactElement {
     return "";
   };
 
+  const diffMinutes = (start: any, end: any): number | null => {
+    const toHM = (t: any): { h: number; m: number } | null => {
+      if (!t) return null;
+      if (typeof t === "string") {
+        const [h, m] = t.split(":");
+        const hh = parseInt(h ?? "0");
+        const mm = parseInt(m ?? "0");
+        if (Number.isFinite(hh) && Number.isFinite(mm)) return { h: hh, m: mm };
+        return null;
+      }
+      if (typeof t?.hour === "number" && typeof t?.minute === "number") {
+        return { h: t.hour, m: t.minute };
+      }
+      return null;
+    };
+    const s = toHM(start);
+    const e = toHM(end);
+    if (!s || !e) return null;
+    let sm = s.h * 60 + s.m;
+    let em = e.h * 60 + e.m;
+    if (em < sm) em += 24 * 60;
+    return em - sm;
+  };
+
+  const addMinutesToTimeText = (timeText: string, addMin: number): string => {
+    const [h, m] = timeText.split(":").map((x) => parseInt(x || "0"));
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return "";
+    let total = h * 60 + m + (addMin || 0);
+    total = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+    const hh = String(Math.floor(total / 60)).padStart(2, "0");
+    const mm = String(total % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  };
+
   useEffect(() => {
     const fetchPolicies = async () => {
       try {
         const data = await workPolicyApi.getAllWorkPolicies();
-        const mapped: WorkPolicy[] = data.map((p) => ({
-          id: String(p.id),
-          name: p.name,
-          details: `${p.type} 정책, 주 ${p.weeklyWorkingDays}일, 근무 ${p.workHours}h ${p.workMinutes}m`,
-          type: String(p.type),
-          status: "active",
-          color: mapTypeToColor(String(p.type)),
-          icon: mapTypeToIcon(String(p.type)),
-          workHours: p.workHours,
-          workMinutes: p.workMinutes,
-          breakTime: p.breakMinutes ?? undefined,
-          weeklyWorkingDays: p.weeklyWorkingDays,
-          coreTimeStartText: formatTime(p.coreTimeStart),
-          coreTimeEndText: formatTime(p.coreTimeEnd),
-          isHolidayFixed: !!p.isHolidayFixed,
-          isFlexibleWork: !!p.isFlexibleWork,
-          isShiftWork: !!p.isShiftWork,
-          isOptionalWork: !!p.isOptionalWork,
-          isFixedWork: !!p.isFixedWork,
-          createdAt: p.createdAt,
-          updatedAt: p.updatedAt,
-        }));
+        const mapped: WorkPolicy[] = data.map((p) => {
+          const pAny: any = p as any;
+          const minutes = diffMinutes(pAny.startTime, pAny.endTime);
+          const hoursFromDiff =
+            minutes != null ? Math.floor(minutes / 60) : undefined;
+          const minutesFromDiff = minutes != null ? minutes % 60 : undefined;
+          const startTxt = formatTime(pAny.startTime);
+          let endTxt = formatTime(pAny.endTime);
+          if (
+            String(p.type) !== "OPTIONAL" &&
+            !endTxt &&
+            startTxt &&
+            (p.workHours != null || p.workMinutes != null)
+          ) {
+            const add = (p.workHours || 0) * 60 + (p.workMinutes || 0);
+            endTxt = addMinutesToTimeText(startTxt, add);
+          }
+          const startTimeText =
+            String(p.type) === "OPTIONAL" ? undefined : startTxt;
+          const endTimeText =
+            String(p.type) === "OPTIONAL" ? undefined : endTxt;
+          const startTimeEndText = formatTime(pAny.startTimeEnd);
+          return {
+            id: String(p.id),
+            name: p.name,
+            details: `${p.type} 정책, 주 ${p.weeklyWorkingDays}일, 근무 ${
+              hoursFromDiff ?? p.workHours
+            }h ${minutesFromDiff ?? p.workMinutes}m`,
+            type: String(p.type),
+            status: "active",
+            color: mapTypeToColor(String(p.type)),
+            icon: mapTypeToIcon(String(p.type)),
+            workHours: hoursFromDiff ?? p.workHours,
+            workMinutes: minutesFromDiff ?? p.workMinutes,
+            breakTime: p.breakMinutes ?? undefined,
+            weeklyWorkingDays: p.weeklyWorkingDays,
+            coreTimeStartText: formatTime(p.coreTimeStart),
+            coreTimeEndText: formatTime(p.coreTimeEnd),
+            startTimeText,
+            endTimeText,
+            startTimeEndText,
+            isHolidayFixed: !!p.isHolidayFixed,
+            isFlexibleWork: !!p.isFlexibleWork,
+            isShiftWork: !!p.isShiftWork,
+            isOptionalWork: !!p.isOptionalWork,
+            isFixedWork: !!p.isFixedWork,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+          };
+        });
         setPolicies(mapped);
       } catch (error: any) {
         console.error("Failed to load work policies:", error);
@@ -426,6 +482,7 @@ export default function WorkPoliciesPage(): ReactElement {
     policyId: string,
     data: Partial<WorkPolicy>
   ): void => {
+    // 낙관적 업데이트
     setPolicies((prev) =>
       prev.map((policy) =>
         policy.id === policyId
@@ -433,6 +490,103 @@ export default function WorkPoliciesPage(): ReactElement {
           : policy
       )
     );
+
+    // 서버 반영
+    (async () => {
+      try {
+        const idNum = Number(policyId);
+        const req: any = {};
+        if (data.name != null) req.name = data.name;
+        if (data.type != null) req.type = data.type;
+        if (data.weeklyWorkingDays != null)
+          req.weeklyWorkingDays = data.weeklyWorkingDays;
+        if (data.workHours != null) req.workHours = data.workHours;
+        if (data.workMinutes != null) req.workMinutes = data.workMinutes;
+        if (data.coreTimeStartText != null)
+          req.coreTimeStart = `${data.coreTimeStartText}:00`;
+        if (data.coreTimeEndText != null)
+          req.coreTimeEnd = `${data.coreTimeEndText}:00`;
+        if (data.startTimeText != null)
+          req.startTime = `${data.startTimeText}:00`;
+        if (data.endTimeText != null) req.endTime = `${data.endTimeText}:00`;
+        if (data.startTimeEndText != null)
+          req.startTimeEnd = `${data.startTimeEndText}:00`;
+        if (data.breakTime != null) req.breakMinutes = data.breakTime;
+
+        // FLEXIBLE(시차 근무) 검증: 필수 필드 보장
+        const current = policies.find((p) => p.id === policyId);
+        const isFlexible = (data.type ?? current?.type) === "FLEXIBLE";
+        if (isFlexible) {
+          if (req.startTime == null && current?.startTimeText) {
+            req.startTime = `${current.startTimeText}:00`;
+          }
+          if (req.startTimeEnd == null && current?.startTimeEndText) {
+            req.startTimeEnd = `${current.startTimeEndText}:00`;
+          }
+        }
+
+        await workPolicyApi.updateWorkPolicy(idNum, req);
+        // 성공 시 서버 데이터 재조회하여 동기화
+        const fresh = await workPolicyApi.getAllWorkPolicies();
+        const mapped: WorkPolicy[] = fresh.map((p) => {
+          const pAny: any = p as any;
+          const minutes = diffMinutes(pAny.startTime, pAny.endTime);
+          const hoursFromDiff =
+            minutes != null ? Math.floor(minutes / 60) : undefined;
+          const minutesFromDiff = minutes != null ? minutes % 60 : undefined;
+          const startTxt = formatTime(pAny.startTime);
+          let endTxt = formatTime(pAny.endTime);
+          if (
+            String(p.type) !== "OPTIONAL" &&
+            !endTxt &&
+            startTxt &&
+            (p.workHours != null || p.workMinutes != null)
+          ) {
+            const add = (p.workHours || 0) * 60 + (p.workMinutes || 0);
+            endTxt = addMinutesToTimeText(startTxt, add);
+          }
+          const startTimeText =
+            String(p.type) === "OPTIONAL" ? undefined : startTxt;
+          const endTimeText =
+            String(p.type) === "OPTIONAL" ? undefined : endTxt;
+          const startTimeEndText = formatTime(pAny.startTimeEnd);
+          return {
+            id: String(p.id),
+            name: p.name,
+            details: `${p.type} 정책, 주 ${p.weeklyWorkingDays}일, 근무 ${
+              hoursFromDiff ?? p.workHours
+            }h ${minutesFromDiff ?? p.workMinutes}m`,
+            type: String(p.type),
+            status: "active",
+            color: mapTypeToColor(String(p.type)),
+            icon: mapTypeToIcon(String(p.type)),
+            workHours: hoursFromDiff ?? p.workHours,
+            workMinutes: minutesFromDiff ?? p.workMinutes,
+            breakTime: p.breakMinutes ?? undefined,
+            weeklyWorkingDays: p.weeklyWorkingDays,
+            coreTimeStartText: formatTime(p.coreTimeStart),
+            coreTimeEndText: formatTime(p.coreTimeEnd),
+            startTimeText,
+            endTimeText,
+            startTimeEndText,
+            isHolidayFixed: !!p.isHolidayFixed,
+            isFlexibleWork: !!p.isFlexibleWork,
+            isShiftWork: !!p.isShiftWork,
+            isOptionalWork: !!p.isOptionalWork,
+            isFixedWork: !!p.isFixedWork,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+          };
+        });
+        setPolicies(mapped);
+        toast.success("근무 정책이 저장되었습니다.");
+      } catch (error: any) {
+        console.error("Failed to update work policy:", error);
+        toast.error(
+          `근무 정책 수정 실패: ${error?.message || "알 수 없는 오류"}`
+        );
+      }
+    })();
   };
 
   const handleDeletePolicy = (policyId: string): void => {

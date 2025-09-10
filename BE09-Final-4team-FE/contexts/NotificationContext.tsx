@@ -90,7 +90,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const connectWebSocket = useCallback(async () => {
     const token = getAccessToken();
     const gatewayUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:9000";
+      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
     console.log("🔄 웹소켓 연결 시도 중...");
     console.log("🌐 Gateway URL:", gatewayUrl);

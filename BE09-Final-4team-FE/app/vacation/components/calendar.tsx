@@ -222,11 +222,11 @@ export default function Calendar({
                     !day.isCurrentMonth
                       ? "text-muted-foreground/30"
                       : isTodayDate
-                      ? "bg-primary text-primary-foreground font-bold"
+                      ? "bg-orange-500 text-white font-bold border-2 border-orange-600 shadow-md"
                       : inRange
                       ? isStart || isEnd
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-primary/20 text-primary-foreground"
+                        ? "bg-blue-600 text-white font-semibold shadow-sm"
+                        : "bg-blue-100 text-blue-800 border border-blue-200"
                       : dayOfWeek === 0
                       ? "text-red-500 hover:bg-red-50"
                       : dayOfWeek === 6

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Mail, Phone, Calendar, Building2, Briefcase } from "lucide-react";
 import ProfileModal from "./ProfileModal";
 import { MemberProfile } from "./profile/types";
-import { getAccessToken } from "@/lib/services/common/api-client";
+import { attachmentApi } from "@/lib/services/attachment/api";
 
 interface Employee {
   id: string;
@@ -77,23 +77,7 @@ export default function MemberList({
 
   // 인증된 이미지 URL 생성 함수
   const getAuthenticatedImageUrl = async (fileId: string) => {
-    try {
-      const token = getAccessToken();
-      if (!token) return null
-
-      const response = await fetch(`http://localhost:9000/api/attachments/${fileId}/view`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const blob = await response.blob()
-        return URL.createObjectURL(blob)
-      }
-    } catch (error) {
-      console.error('이미지 로드 실패:', error)
-    }
+    return await attachmentApi.viewFile(fileId)
     return null
   }
 

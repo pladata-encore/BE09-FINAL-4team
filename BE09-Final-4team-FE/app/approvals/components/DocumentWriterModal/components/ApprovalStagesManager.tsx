@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, memo, useCallback } from "react"
+import { useState, memo, useCallback, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, X } from "lucide-react"
 import { UserResponseDto } from "@/lib/services/user/types"
 import { ApprovalStagesManagerProps, LocalApprovalStage } from "../types"
+import { attachmentApi } from "@/lib/services/attachment/api"
 
 const ApprovalStagesManagerComponent = ({
   stages,
@@ -14,6 +15,34 @@ const ApprovalStagesManagerComponent = ({
   availableUsers
 }: ApprovalStagesManagerProps) => {
   const [selectedApprover, setSelectedApprover] = useState<{ [stageId: string]: string }>({})
+  const [authenticatedImageUrls, setAuthenticatedImageUrls] = useState<{ [userId: number]: string }>({})
+  
+  const getAuthenticatedImageUrl = async (fileId: string) => {
+    return await attachmentApi.viewFile(fileId)
+    return null
+  }
+  
+  useEffect(() => {
+    const loadImages = async () => {
+      const imagePromises = availableUsers.map(async (user) => {
+        if (user.profileImageUrl && !user.profileImageUrl.startsWith('http')) {
+          const url = await getAuthenticatedImageUrl(user.profileImageUrl)
+          return { userId: user.id, url }
+        }
+        return { userId: user.id, url: user.profileImageUrl }
+      })
+      
+      const imageResults = await Promise.all(imagePromises)
+      const imageMap = imageResults.reduce((acc, { userId, url }) => {
+        if (url) acc[userId] = url
+        return acc
+      }, {} as { [userId: number]: string })
+      
+      setAuthenticatedImageUrls(imageMap)
+    }
+    
+    loadImages()
+  }, [availableUsers])
   
   const addStage = useCallback(() => {
     if (stages.length >= 5) return
@@ -75,7 +104,7 @@ const ApprovalStagesManagerComponent = ({
               <div key={approver.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src={approver.profileImageUrl} alt={approver.name} />
+                    <AvatarImage src={authenticatedImageUrls[approver.id]} alt={approver.name} />
                     <AvatarFallback className="text-xs">
                       {approver.name?.charAt(0) || "U"}
                     </AvatarFallback>
@@ -122,7 +151,7 @@ const ApprovalStagesManagerComponent = ({
                     <SelectItem key={user.id} value={user.id.toString()}>
                       <div className="flex items-center gap-2">
                         <Avatar className="w-6 h-6">
-                          <AvatarImage src={user.profileImageUrl} alt={user.name} />
+                          <AvatarImage src={authenticatedImageUrls[user.id]} alt={user.name} />
                           <AvatarFallback className="text-xs">
                             {user.name?.charAt(0) || "U"}
                           </AvatarFallback>
